@@ -1,0 +1,4 @@
+FEATURES_REQUIRED += cpp
+USEMODULE += periph_gpio_irq
+USEMODULE += periph_spi
+USEMODULE += xtimer
