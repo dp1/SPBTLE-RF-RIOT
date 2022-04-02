@@ -22,7 +22,7 @@
 ******************************************************************************/
 #include <hal_types.h>
 #include "ble_list.h"
-#include "stm32_def.h"
+#include "irq.h"
 
 /******************************************************************************
  * Function Definitions
@@ -38,8 +38,8 @@ uint8_t ble_list_is_empty (tListNode * listHead)
   uint32_t uwPRIMASK_Bit;
   uint8_t return_value;
 
-  uwPRIMASK_Bit = __get_PRIMASK();  /**< backup PRIMASK bit */
-  __disable_irq();                  /**< Disable all interrupts by setting PRIMASK bit on Cortex*/
+  uwPRIMASK_Bit = irq_disable();
+
   if(listHead->next == listHead)
   {
     return_value = TRUE;
@@ -48,7 +48,7 @@ uint8_t ble_list_is_empty (tListNode * listHead)
   {
     return_value = FALSE;
   }
-  __set_PRIMASK(uwPRIMASK_Bit);     /**< Restore PRIMASK bit*/
+  irq_restore(uwPRIMASK_Bit);
 
   return return_value;
 }
@@ -57,103 +57,96 @@ void ble_list_insert_head (tListNode * listHead, tListNode * node)
 {
   uint32_t uwPRIMASK_Bit;
 
-  uwPRIMASK_Bit = __get_PRIMASK();  /**< backup PRIMASK bit */
-  __disable_irq();                  /**< Disable all interrupts by setting PRIMASK bit on Cortex*/
+  uwPRIMASK_Bit = irq_disable();
 
   node->next = listHead->next;
   node->prev = listHead;
   listHead->next = node;
   (node->next)->prev = node;
 
-  __set_PRIMASK(uwPRIMASK_Bit);     /**< Restore PRIMASK bit*/
+  irq_restore(uwPRIMASK_Bit);
 }
 
 void ble_list_insert_tail (tListNode * listHead, tListNode * node)
 {
   uint32_t uwPRIMASK_Bit;
 
-  uwPRIMASK_Bit = __get_PRIMASK();  /**< backup PRIMASK bit */
-  __disable_irq();                  /**< Disable all interrupts by setting PRIMASK bit on Cortex*/
+  uwPRIMASK_Bit = irq_disable();
 
   node->next = listHead;
   node->prev = listHead->prev;
   listHead->prev = node;
   (node->prev)->next = node;
 
-  __set_PRIMASK(uwPRIMASK_Bit);     /**< Restore PRIMASK bit*/
+  irq_restore(uwPRIMASK_Bit);
 }
 
 void ble_list_remove_node (tListNode * node)
 {
   uint32_t uwPRIMASK_Bit;
 
-  uwPRIMASK_Bit = __get_PRIMASK();  /**< backup PRIMASK bit */
-  __disable_irq();                  /**< Disable all interrupts by setting PRIMASK bit on Cortex*/
+  uwPRIMASK_Bit = irq_disable();
 
   (node->prev)->next = node->next;
   (node->next)->prev = node->prev;
 
-  __set_PRIMASK(uwPRIMASK_Bit);     /**< Restore PRIMASK bit*/
+  irq_restore(uwPRIMASK_Bit);
 }
 
 void ble_list_remove_head (tListNode * listHead, tListNode ** node )
 {
   uint32_t uwPRIMASK_Bit;
 
-  uwPRIMASK_Bit = __get_PRIMASK();  /**< backup PRIMASK bit */
-  __disable_irq();                  /**< Disable all interrupts by setting PRIMASK bit on Cortex*/
+  uwPRIMASK_Bit = irq_disable();
 
   *node = listHead->next;
   ble_list_remove_node (listHead->next);
   (*node)->next = NULL;
   (*node)->prev = NULL;
 
-  __set_PRIMASK(uwPRIMASK_Bit);     /**< Restore PRIMASK bit*/
+  irq_restore(uwPRIMASK_Bit);
 }
 
 void ble_list_remove_tail (tListNode * listHead, tListNode ** node )
 {
   uint32_t uwPRIMASK_Bit;
 
-  uwPRIMASK_Bit = __get_PRIMASK();  /**< backup PRIMASK bit */
-  __disable_irq();                  /**< Disable all interrupts by setting PRIMASK bit on Cortex*/
+  uwPRIMASK_Bit = irq_disable();
 
   *node = listHead->prev;
   ble_list_remove_node (listHead->prev);
   (*node)->next = NULL;
   (*node)->prev = NULL;
 
-  __set_PRIMASK(uwPRIMASK_Bit);     /**< Restore PRIMASK bit*/
+  irq_restore(uwPRIMASK_Bit);
 }
 
 void ble_list_insert_node_after (tListNode * node, tListNode * ref_node)
 {
   uint32_t uwPRIMASK_Bit;
 
-  uwPRIMASK_Bit = __get_PRIMASK();  /**< backup PRIMASK bit */
-  __disable_irq();                  /**< Disable all interrupts by setting PRIMASK bit on Cortex*/
+  uwPRIMASK_Bit = irq_disable();
 
   node->next = ref_node->next;
   node->prev = ref_node;
   ref_node->next = node;
   (node->next)->prev = node;
 
-  __set_PRIMASK(uwPRIMASK_Bit);     /**< Restore PRIMASK bit*/
+  irq_restore(uwPRIMASK_Bit);
 }
 
 void ble_list_insert_node_before (tListNode * node, tListNode * ref_node)
 {
   uint32_t uwPRIMASK_Bit;
 
-  uwPRIMASK_Bit = __get_PRIMASK();  /**< backup PRIMASK bit */
-  __disable_irq();                  /**< Disable all interrupts by setting PRIMASK bit on Cortex*/
+  uwPRIMASK_Bit = irq_disable();
 
   node->next = ref_node;
   node->prev = ref_node->prev;
   ref_node->prev = node;
   (node->prev)->next = node;
 
-  __set_PRIMASK(uwPRIMASK_Bit);     /**< Restore PRIMASK bit*/
+  irq_restore(uwPRIMASK_Bit);
 }
 
 int ble_list_get_size (tListNode * listHead)
@@ -162,8 +155,7 @@ int ble_list_get_size (tListNode * listHead)
   tListNode * temp;
   uint32_t uwPRIMASK_Bit;
 
-  uwPRIMASK_Bit = __get_PRIMASK();  /**< backup PRIMASK bit */
-  __disable_irq();                  /**< Disable all interrupts by setting PRIMASK bit on Cortex*/
+  uwPRIMASK_Bit = irq_disable();
 
   temp = listHead->next;
   while (temp != listHead)
@@ -172,7 +164,7 @@ int ble_list_get_size (tListNode * listHead)
     temp = temp->next;
   }
 
-  __set_PRIMASK(uwPRIMASK_Bit);     /**< Restore PRIMASK bit*/
+  irq_restore(uwPRIMASK_Bit);
   return (size);
 }
 
@@ -180,24 +172,22 @@ void ble_list_get_next_node (tListNode * ref_node, tListNode ** node)
 {
   uint32_t uwPRIMASK_Bit;
 
-  uwPRIMASK_Bit = __get_PRIMASK();  /**< backup PRIMASK bit */
-  __disable_irq();                  /**< Disable all interrupts by setting PRIMASK bit on Cortex*/
+  uwPRIMASK_Bit = irq_disable();
 
   *node = ref_node->next;
 
-  __set_PRIMASK(uwPRIMASK_Bit);     /**< Restore PRIMASK bit*/
+  irq_restore(uwPRIMASK_Bit);
 }
 
 void ble_list_get_prev_node (tListNode * ref_node, tListNode ** node)
 {
   uint32_t uwPRIMASK_Bit;
 
-  uwPRIMASK_Bit = __get_PRIMASK();  /**< backup PRIMASK bit */
-  __disable_irq();                  /**< Disable all interrupts by setting PRIMASK bit on Cortex*/
+  uwPRIMASK_Bit = irq_disable();
 
   *node = ref_node->prev;
 
-  __set_PRIMASK(uwPRIMASK_Bit);      /**< Restore PRIMASK bit*/
+  irq_restore(uwPRIMASK_Bit);
 }
 
 
