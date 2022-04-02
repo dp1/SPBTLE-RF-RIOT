@@ -54,7 +54,7 @@
 #include "hal.h"
 #include "sm.h"
 #include "debug.h"
-#include <SPBTLE_RF.h>
+#include "SPBTLE_RF.hpp"
 #include <stdlib.h>
 #include "eddystone_beacon.h"
 

@@ -36,7 +36,7 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-#include <SPBTLE_RF.h>
+#include "SPBTLE_RF.hpp"
 #include "Arduino.h"
 #include "hci.h"
 #include "stm32_bluenrg_ble.h"

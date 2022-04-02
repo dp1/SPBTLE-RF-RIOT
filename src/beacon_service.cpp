@@ -44,7 +44,7 @@
 #include "osal.h"
 #include "bluenrg_gap_aci.h"
 #include "bluenrg_gatt_aci.h"
-#include "SPBTLE_RF.h"
+#include "SPBTLE_RF.hpp"
 
 /** @addtogroup X-CUBE-BLE1_Applications
  *  @{

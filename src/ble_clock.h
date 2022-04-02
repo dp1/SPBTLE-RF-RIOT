@@ -21,8 +21,6 @@
 extern "C" {
 #endif
 
-#include "wiring_time.h"
-
 typedef uint32_t tClockTime;
 #define CLOCK_SECOND 1000
 #define Clock_Init()

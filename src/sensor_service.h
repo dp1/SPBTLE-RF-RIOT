@@ -55,7 +55,7 @@
 #include "hal.h"
 #include "sm.h"
 #include "debug.h"
-#include <SPBTLE_RF.h>
+#include "SPBTLE_RF.hpp"
 #include <stdlib.h>
 
 /** @addtogroup X-CUBE-BLE1_Applications
