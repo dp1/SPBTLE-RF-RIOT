@@ -28,6 +28,9 @@
 #include "gp_timer.h"
 #include "bluenrg_interface.h"
 #include "ble_list.h"
+#include "thread.h"
+#include "cond.h"
+#include "mutex.h"
 
 #include "stm32_bluenrg_ble.h"
 
@@ -58,6 +61,9 @@ void hci_timeout_callback(void)
   return;
 }
 
+char hci_thread_stack[THREAD_STACKSIZE_MAIN];
+void* HCI_Reader_Thread(void *arg);
+
 void HCI_Init(void)
 {
   uint8_t index;
@@ -71,6 +77,10 @@ void HCI_Init(void)
   {
     ble_list_insert_tail(&hciReadPktPool, (tListNode *)&hciReadPacketBuffer[index]);
   }
+
+  thread_create(hci_thread_stack, sizeof(hci_thread_stack),
+    THREAD_PRIORITY_MAIN - 1, THREAD_CREATE_STACKTEST,
+    HCI_Reader_Thread, NULL, "hci_reader_thread");
 }
 
 #define HCI_PCK_TYPE_OFFSET                 0
@@ -122,39 +132,58 @@ BOOL HCI_Queue_Empty(void)
   return ble_list_is_empty(&hciReadPktRxQueue);
 }
 
+static cond_t hci_reader_cond = COND_INIT;
+static mutex_t hci_reader_mutex = MUTEX_INIT;
+
 void HCI_Isr(void)
 {
+  // We can't use SPI from inside of an interrupt handler, signal the reader thread
+  // that data is available to be read
+
+  cond_signal(&hci_reader_cond);
+}
+
+void* HCI_Reader_Thread(void *arg)
+{
+  (void)arg;
+
   tHciDataPacket * hciReadPacket = NULL;
   uint8_t data_len;
 
-  Clear_SPI_EXTI_Flag();
-  while(BlueNRG_DataPresent()){
-    if (ble_list_is_empty (&hciReadPktPool) == FALSE){
+  while(1) {
 
-      /* enqueueing a packet for read */
-      ble_list_remove_head (&hciReadPktPool, (tListNode **)&hciReadPacket);
+    // We don't strictly need a mutex here, as there is only a single thread waiting
+    // on the condition variable. Nevertheless, cond_wait expects a mutex
+    mutex_lock(&hci_reader_mutex);
+    cond_wait(&hci_reader_cond, &hci_reader_mutex);
 
-      data_len = BlueNRG_SPI_Read_All(hciReadPacket->dataBuff, HCI_READ_PACKET_SIZE);
-      if(data_len > 0){
-        hciReadPacket->data_len = data_len;
-        if(HCI_verify(hciReadPacket) == 0)
-          ble_list_insert_tail(&hciReadPktRxQueue, (tListNode *)hciReadPacket);
-        else
+    while(BlueNRG_DataPresent()){
+      if (ble_list_is_empty (&hciReadPktPool) == FALSE){
+
+        /* enqueueing a packet for read */
+        ble_list_remove_head (&hciReadPktPool, (tListNode **)&hciReadPacket);
+
+        data_len = BlueNRG_SPI_Read_All(hciReadPacket->dataBuff, HCI_READ_PACKET_SIZE);
+        if(data_len > 0){
+          hciReadPacket->data_len = data_len;
+          if(HCI_verify(hciReadPacket) == 0)
+            ble_list_insert_tail(&hciReadPktRxQueue, (tListNode *)hciReadPacket);
+          else
+            ble_list_insert_head(&hciReadPktPool, (tListNode *)hciReadPacket);
+        }
+        else {
+          // Insert the packet back into the pool.
           ble_list_insert_head(&hciReadPktPool, (tListNode *)hciReadPacket);
-      }
-      else {
-        // Insert the packet back into the pool.
-        ble_list_insert_head(&hciReadPktPool, (tListNode *)hciReadPacket);
-      }
+        }
 
-    }
-    else{
-      // HCI Read Packet Pool is empty, wait for a free packet.
-      Clear_SPI_EXTI_Flag();
-      return;
+      }
+      else{
+        // HCI Read Packet Pool is empty, wait for a free packet.
+        return NULL;
+      }
     }
 
-    Clear_SPI_EXTI_Flag();
+    mutex_unlock(&hci_reader_mutex);
   }
 }
 
