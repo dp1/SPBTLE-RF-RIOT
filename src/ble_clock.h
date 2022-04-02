@@ -21,11 +21,13 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+
 typedef uint32_t tClockTime;
 #define CLOCK_SECOND 1000
 #define Clock_Init()
-#define Clock_Time millis
-#define Clock_Wait delay
+tClockTime Clock_Time(void);
+void Clock_Wait(tClockTime t);
 
 #ifdef __cplusplus
 }
