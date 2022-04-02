@@ -53,8 +53,9 @@ extern "C" {
  * @param  Specifies the pins connected EXTI line
  * @retval None
  */
-__weak void SPI_EXTI_Callback(void)
+void SPI_EXTI_Callback(void *arg)
 {
+  (void)arg;
   HCI_Isr();
 }
 

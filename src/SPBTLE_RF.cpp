@@ -37,13 +37,13 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "SPBTLE_RF.hpp"
-#include "Arduino.h"
 #include "hci.h"
 #include "stm32_bluenrg_ble.h"
 #include "bluenrg_interface.h"
 #include "debug.h"
 #include "gp_timer.h"
 #include "hal.h"
+#include "xtimer.h"
 
 #define HEADER_SIZE 5
 #define MAX_BUFFER_SIZE 255
@@ -52,14 +52,14 @@ uint8_t bnrg_expansion_board;
 
 void (*HCI_callback)(void *);
 
-static SPIClass *SPIBTLE;
-static uint8_t csPin;
-static uint8_t spiIRQPin;
-static uint8_t resetPin;
-static uint8_t ledPin;
+static spi_t SPIBTLE;
+static gpio_t csPin;
+static gpio_t spiIRQPin;
+static gpio_t resetPin;
+static gpio_t ledPin;
 
-SPBTLERFClass::SPBTLERFClass(SPIClass *SPIx, uint8_t cs, uint8_t spiIRQ,
-                              uint8_t reset, uint8_t led)
+SPBTLERFClass::SPBTLERFClass(spi_t SPIx, gpio_t cs, gpio_t spiIRQ,
+                              gpio_t reset, gpio_t led)
 {
   SPIBTLE = SPIx;
   csPin = cs;
@@ -72,16 +72,15 @@ SPBTLERF_state_t SPBTLERFClass::begin(void)
 {
   /* Initialize the BlueNRG SPI driver */
   // Configure SPI and CS pin
-  SPIBTLE->begin();
-  pinMode(csPin, OUTPUT);
-  digitalWrite(csPin, HIGH);
+  spi_init(SPIBTLE);
+  spi_init_cs(SPIBTLE, csPin);
 
   // Enable SPI EXTI interrupt
-  attachInterrupt(spiIRQPin, SPI_EXTI_Callback, RISING);
+  gpio_init_int(spiIRQPin, GPIO_IN_PD, GPIO_RISING, SPI_EXTI_Callback, NULL);
 
   // Configure Reset pin
-  pinMode(resetPin, OUTPUT);
-  digitalWrite(resetPin, LOW);  // Keep module in reset state
+  gpio_init(resetPin, GPIO_OUT);
+  gpio_clear(resetPin);  // Keep module in reset state
 
   /* Initialize the BlueNRG HCI */
   HCI_Init();
@@ -90,9 +89,9 @@ SPBTLERF_state_t SPBTLERFClass::begin(void)
   BlueNRG_RST();
 
   // If a LED is associated, enable it to indicate the module is ready
-  if(ledPin != 0xFF) {
-    pinMode(ledPin, OUTPUT);
-    digitalWrite(ledPin, LOW);
+  if(!gpio_is_equal(ledPin, GPIO_UNDEF)) {
+    gpio_init(ledPin, GPIO_OUT);
+    gpio_clear(ledPin);
   }
 
   return SPBTLERF_OK;
@@ -100,14 +99,16 @@ SPBTLERF_state_t SPBTLERFClass::begin(void)
 
 void SPBTLERFClass::end(void)
 {
-  digitalWrite(resetPin, LOW);
-  detachInterrupt(spiIRQPin);
-  SPIBTLE->end();
+  gpio_clear(resetPin);
+  gpio_irq_disable(spiIRQPin);
 
-  if(ledPin != 0xFF) {
-    digitalWrite(ledPin, HIGH);
+  gpio_set(csPin);
+  spi_release(SPIBTLE);
+
+  if(!gpio_is_equal(ledPin, GPIO_UNDEF)) {
+    gpio_set(ledPin);
     // Allows to not enable the WiFi LED on board Discovery L475VG IOT
-    pinMode(ledPin, INPUT);
+    gpio_init(ledPin, GPIO_IN);
   }
 }
 
@@ -170,10 +171,10 @@ void Hal_Write_Serial(const void* data1, const void* data2, int32_t n_bytes1,
  */
 void BlueNRG_RST(void)
 {
-  digitalWrite(resetPin, LOW);
-  delay(5);
-  digitalWrite(resetPin, HIGH);
-  delay(5);
+  gpio_clear(resetPin);
+  xtimer_usleep(5000);
+  gpio_set(resetPin);
+  xtimer_usleep(5000);
 }
 
 /**
@@ -184,13 +185,7 @@ void BlueNRG_RST(void)
 // FIXME: find a better way to handle this return value (bool type? TRUE and FALSE)
 uint8_t BlueNRG_DataPresent(void)
 {
-  PinName p = digitalPinToPinName(spiIRQPin);
-  /* Can't use digitalWrite() because pin is not configured with pinMode()
-  function so we must call directly HAL function */
-  if (HAL_GPIO_ReadPin(get_GPIO_Port(STM_PORT(p)), STM_GPIO_PIN(p)) == GPIO_PIN_SET)
-      return 1;
-  else
-      return 0;
+  return gpio_read(spiIRQPin) != 0;
 } /* end BlueNRG_DataPresent() */
 
 /**
@@ -202,8 +197,8 @@ void BlueNRG_HW_Bootloader(void)
 {
   Disable_SPI_IRQ();
 
-  pinMode(spiIRQPin, OUTPUT);
-  digitalWrite(spiIRQPin, HIGH);
+  gpio_init(spiIRQPin, GPIO_OUT);
+  gpio_set(spiIRQPin);
 
   BlueNRG_RST();
   Enable_SPI_IRQ();
@@ -227,13 +222,10 @@ int32_t BlueNRG_SPI_Read_All(uint8_t *buffer,
   uint8_t header_slave[HEADER_SIZE];
 
   /* CS reset */
-  digitalWrite(csPin, LOW);
-
-  if(SPIBTLE == NULL)
-  return 0;
+  spi_acquire(SPIBTLE, csPin, SPI_MODE_0, SPI_CLK_1MHZ);
 
   /* Read the header */
-  SPIBTLE->transfer(header_master, header_slave, HEADER_SIZE);
+  spi_transfer_bytes(SPIBTLE, csPin, true, header_master, header_slave, HEADER_SIZE);
 
   if (header_slave[0] == 0x02) {
     /* device is ready */
@@ -247,18 +239,19 @@ int32_t BlueNRG_SPI_Read_All(uint8_t *buffer,
       }
 
       for (len = 0; len < byte_count; len++){
-        read_char = SPIBTLE->transfer(char_ff);
+        read_char = spi_transfer_byte(SPIBTLE, csPin, true, char_ff);
         buffer[len] = read_char;
       }
 
     }
   }
   /* Release CS line */
-  digitalWrite(csPin, HIGH);
+  gpio_set(csPin);
+  spi_release(SPIBTLE);
 
   // Add a small delay to give time to the BlueNRG to set the IRQ pin low
   // to avoid a useless SPI read at the end of the transaction
-  for(volatile int i = 0; i < 2; i++)__NOP();
+  xtimer_usleep(1);
 
   #ifdef PRINT_CSV_FORMAT
   if (len > 0) {
@@ -294,13 +287,10 @@ int32_t BlueNRG_SPI_Write(uint8_t* data1,
   Disable_SPI_IRQ();
 
   /* CS reset */
-  digitalWrite(csPin, LOW);
-
-  if(SPIBTLE == NULL)
-    return -1;
+  spi_acquire(SPIBTLE, csPin, SPI_MODE_0, SPI_CLK_1MHZ);
 
   /* Exchange header */
-  SPIBTLE->transfer(header_master, header_slave, HEADER_SIZE);
+  spi_transfer_bytes(SPIBTLE, csPin, true, header_master, header_slave, HEADER_SIZE);
 
   if (header_slave[0] == 0x02) {
     /* SPI is ready */
@@ -308,10 +298,10 @@ int32_t BlueNRG_SPI_Write(uint8_t* data1,
 
       /*  Buffer is big enough */
       if (Nb_bytes1 > 0) {
-        SPIBTLE->transfer(data1, read_char_buf, Nb_bytes1);
+        spi_transfer_bytes(SPIBTLE, csPin, true, data1, read_char_buf, Nb_bytes1);
       }
       if (Nb_bytes2 > 0) {
-        SPIBTLE->transfer(data2, read_char_buf, Nb_bytes2);
+        spi_transfer_bytes(SPIBTLE, csPin, true, data2, read_char_buf, Nb_bytes2);
       }
 
     } else {
@@ -324,7 +314,8 @@ int32_t BlueNRG_SPI_Write(uint8_t* data1,
   }
 
   /* Release CS line */
-  digitalWrite(csPin, HIGH);
+  gpio_set(csPin);
+  spi_release(SPIBTLE);
 
   Enable_SPI_IRQ();
 
@@ -338,7 +329,7 @@ int32_t BlueNRG_SPI_Write(uint8_t* data1,
  */
 void Enable_SPI_IRQ(void)
 {
-  attachInterrupt(spiIRQPin, SPI_EXTI_Callback, RISING);
+  gpio_irq_enable(spiIRQPin);
 }
 
 /**
@@ -348,7 +339,7 @@ void Enable_SPI_IRQ(void)
  */
 void Disable_SPI_IRQ(void)
 {
-  detachInterrupt(spiIRQPin);
+  gpio_irq_disable(spiIRQPin);
 }
 
 /**

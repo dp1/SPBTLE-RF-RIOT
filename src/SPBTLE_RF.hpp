@@ -31,8 +31,8 @@
 #ifndef __SPBTLE_RF_H
 #define __SPBTLE_RF_H
 
-#include "Arduino.h"
-#include <SPI.h>
+// #include "Arduino.h"
+#include "periph/spi.h"
 
 #define IDB04A1 0
 #define IDB05A1 1
@@ -55,7 +55,7 @@ class SPBTLERFClass
 {
   public:
     SPBTLERFClass();
-    SPBTLERFClass(SPIClass *SPIx, uint8_t csPin, uint8_t spiIRQ, uint8_t reset, uint8_t led = 0xFF);
+    SPBTLERFClass(spi_t SPIx, gpio_t csPin, gpio_t spiIRQ, gpio_t reset, gpio_t led = GPIO_UNDEF);
 
     SPBTLERF_state_t begin(void);
     void end(void);

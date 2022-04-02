@@ -49,7 +49,7 @@ extern "C" {
 
 void Hal_Write_Serial(const void* data1, const void* data2, int32_t n_bytes1,
                       int32_t n_bytes2);
-void SPI_EXTI_Callback(void);
+void SPI_EXTI_Callback(void*);
 
 #ifdef __cplusplus
 }

@@ -44,8 +44,7 @@
 #endif
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm32_def.h"
-
+#include <stdint.h>
 
 /** @addtogroup BSP
  *  @{

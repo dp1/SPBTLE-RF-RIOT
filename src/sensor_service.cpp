@@ -44,7 +44,7 @@
 #include "bluenrg_gap_aci.h"
 #include "bluenrg_gatt_aci.h"
 #include "gp_timer.h"
-#include "Arduino.h"
+#include "xtimer.h"
 
 /** @addtogroup X-CUBE-BLE1_Applications
  *  @{
@@ -129,18 +129,18 @@ tBleStatus SensorServiceClass::begin(const char *name, uint8_t addr[BDADDR_SIZE]
 
   int ret;
 
-  dev_nameLen = 7; // default 
+  dev_nameLen = 7; // default
   if(addr == NULL) {
     return BLE_STATUS_NULL_PARAM;
   }
   if(name != NULL) {
-    memset(dev_name, 0, sizeof(dev_name)); 
+    memset(dev_name, 0, sizeof(dev_name));
     dev_nameLen = (strlen(name)<7) ? strlen(name) : 7;
     dev_name[0] =AD_TYPE_COMPLETE_LOCAL_NAME;
     strncpy(&dev_name[1], name, dev_nameLen );
   }
-  
-  
+
+
   attach_HCI_CB(Sensor_HCI_Event_CB);
 
   /* get the BlueNRG HW and FW versions */
@@ -568,7 +568,7 @@ void SensorServiceClass::GAP_ConnectionComplete_CB(uint8_t addr[BDADDR_SIZE], ui
   }
   PRINTF("%02X\n", addr[0]);
 #else
-  UNUSED(addr);
+  (void)addr;
 #endif
 
 }
@@ -754,9 +754,8 @@ tBleStatus SensorServiceClass::Seconds_Update(void)
   uint32_t val;
   tBleStatus ret;
 
-  /* Obtain system tick value in milliseconds, and convert it to seconds. */
-  val = millis();
-  val = val/1000;
+  /* Obtain system tick value in microseconds, and convert it to seconds. */
+  val = xtimer_now_usec()/1000000;
 
   /* create a time[] array to pass as last argument of aci_gatt_update_char_value() API*/
   const uint8_t time[4] = {(uint8_t)((val >> 24)&0xFF), (uint8_t)((val >> 16)&0xFF), (uint8_t)((val >> 8)&0xFF), (uint8_t)((val)&0xFF)};
@@ -788,7 +787,7 @@ tBleStatus SensorServiceClass::Minutes_Notify(void)
   tBleStatus ret;
 
   /* Obtain system tick value in milliseconds */
-  val = millis();
+  val = xtimer_now_usec() / 1000;
 
   /* update "Minutes characteristic" value iff it has changed w.r.t. previous
    * "minute" value.
@@ -880,8 +879,8 @@ fail:
  */
 void SensorServiceClass::Attribute_Modified_CB(uint16_t handle, uint8_t data_length, uint8_t *att_data)
 {
-  UNUSED(data_length);
-  UNUSED(att_data);
+  (void)data_length;
+  (void)att_data;
 
   /* If GATT client has modified 'LED button characteristic' value, toggle LED2 */
   if(handle == ledButtonCharHandle + 1){
