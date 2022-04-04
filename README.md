@@ -30,7 +30,7 @@ Three services are started : Acc, Environnemental and Time.
 For testing the sketch, you can download on the playstore the "BLueNRG" application provided by STMicroelectronics.
 Launch the application and enable Bluetooth on your smartphone. Connect it to the BLueNRG device. You will see all the services,
 you can click on each one and read the data.
-Pay attention that the device name can't be more than 7 characters long. If the string passed to the begin function is longer, it is 
+Pay attention that the device name can't be more than 7 characters long. If the string passed to the begin function is longer, it is
 automatically trimmed to the first 7 characters.
 The BlueNRG app expects "BlueNRG" as device name, using anything else will make the device not connectable.
 
@@ -50,19 +50,19 @@ Start the service. For example the BeaconService in UID_TYPE.
 
 ## BLE stack
 
-Version: 3.0.0  
-The Bluetooth stack comes from [STM32CubeExpansion_BLE1_V3.0.0](http://www.st.com/content/st_com/en/products/embedded-software/mcus-embedded-software/stm32-embedded-software/stm32cube-embedded-software-expansion/x-cube-ble1.html).  
+Version: 3.0.0
+The Bluetooth stack comes from [STM32CubeExpansion_BLE1_V3.0.0](http://www.st.com/content/st_com/en/products/embedded-software/mcus-embedded-software/stm32-embedded-software/stm32cube-embedded-software-expansion/x-cube-ble1.html).
 
-The BlueNRG stack is composed of some specific parts:  
+The BlueNRG stack is composed of some specific parts:
 
-* **HCI** files provide API for HCI (Host Controller Interface) layer  
-* **GAP** files provide API for GAP (Generic Access Profile) layer  
-* **GATT** files provide API for GATT (Generic Attribute Profile) layer  
-* **L2CAP** files provide API for L2CAP (Logical Link Control and Adaptation Protocol) layer  
+* **HCI** files provide API for HCI (Host Controller Interface) layer
+* **GAP** files provide API for GAP (Generic Access Profile) layer
+* **GATT** files provide API for GATT (Generic Attribute Profile) layer
+* **L2CAP** files provide API for L2CAP (Logical Link Control and Adaptation Protocol) layer
 
-More information about the different layers:  
+More information about the different layers:
 * https://www.bluetooth.com/specifications/bluetooth-core-specification
-* https://www.bluetooth.com/specifications/gatt  
+* https://www.bluetooth.com/specifications/gatt
 
 ## Note
 
@@ -73,8 +73,8 @@ documentation for more information about the IFR updater.
 
 ## Documentation
 
-You can find the source files at  
+You can find the source files at
 https://github.com/stm32duino/SPBTLE-RF
 
-The SPBTLE-RF module datasheet is available at  
+The SPBTLE-RF module datasheet is available at
 http://www.st.com/content/st_com/en/products/wireless-connectivity/bluetooth-bluetooth-low-energy/spbtle-rf.html
