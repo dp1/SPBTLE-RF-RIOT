@@ -177,9 +177,9 @@ void* HCI_Reader_Thread(void *arg)
         }
 
       }
-      else{
+      else {
         // HCI Read Packet Pool is empty, wait for a free packet.
-        return NULL;
+        break;
       }
     }
 
