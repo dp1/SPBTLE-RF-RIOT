@@ -161,14 +161,14 @@ void Observer_HCI_Event_CB(void *pckt)
     /* obtain event packet */
     hci_event_pckt *event_pckt = (hci_event_pckt*)hci_pckt->data;
 
-    printf("Received event, hci_pckt->type = %d\n", hci_pckt->type);
+    // printf("Received event, hci_pckt->type = %d\n", hci_pckt->type);
 
     if(hci_pckt->type != HCI_EVENT_PKT)
     {
         return;
     }
 
-    printf("event_pckt->evt = %d, plen = %d\n", event_pckt->evt, event_pckt->plen);
+    // printf("event_pckt->evt = %d, plen = %d\n", event_pckt->evt, event_pckt->plen);
 
     switch(event_pckt->evt)
     {
@@ -178,7 +178,7 @@ void Observer_HCI_Event_CB(void *pckt)
         case EVT_LE_META_EVENT:
         {
             evt_le_meta_event *evt = (evt_le_meta_event *)event_pckt->data;
-            printf("LE_META_EVENT subevent = %d\n", evt->subevent);
+            // printf("LE_META_EVENT subevent = %d\n", evt->subevent);
 
             switch(evt->subevent)
             {
