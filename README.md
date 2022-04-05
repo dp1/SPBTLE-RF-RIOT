@@ -1,3 +1,10 @@
+# SPBTLE-RF-RIOT
+This repo is a port of the stm32duino SPBTLE-RF for [RIOT OS](https://github.com/RIOT-OS/RIOT). Additionally, it adds an [observer implementation](spbtlerf/observer.cpp) to allow for receiving packes broadcasted by BLE beacons.
+
+Original README below.
+
+---
+
 # SPBTLE-RF
 Arduino library to support the Bluetooth (V4.1 compliant) SPBTLE-RF module
 
