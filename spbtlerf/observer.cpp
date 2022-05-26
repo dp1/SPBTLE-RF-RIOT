@@ -186,7 +186,9 @@ void Observer_HCI_Event_CB(void *pckt)
                     break;
                 case EVT_LE_ADVERTISING_REPORT:
                 {
-                    le_advertising_info *adv = (le_advertising_info *)evt->data;
+                    uint8_t num_reports = evt->data[0];
+                    (void)num_reports;
+                    le_advertising_info *adv = (le_advertising_info *)(evt->data + 1);
                     if(adv_cb)
                         adv_cb(adv);
                 }
