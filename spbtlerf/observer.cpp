@@ -129,7 +129,7 @@ tBleStatus ObserverServiceClass::begin(uint8_t addr[BDADDR_SIZE])
         return ret;
     }
 
-    ret = aci_gap_start_observation_procedure(0x2000, 0x2000, PASSIVE_SCAN, PUBLIC_ADDR, 1);
+    ret = aci_gap_start_observation_procedure(0x2000, 0x2000, PASSIVE_SCAN, PUBLIC_ADDR, 0);
 
     if(ret) {
         puts("observation start failed");
