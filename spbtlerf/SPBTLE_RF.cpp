@@ -103,7 +103,6 @@ void SPBTLERFClass::end(void)
   gpio_irq_disable(spiIRQPin);
 
   gpio_set(csPin);
-  spi_release(SPIBTLE);
 
   if(!gpio_is_equal(ledPin, GPIO_UNDEF)) {
     gpio_set(ledPin);
