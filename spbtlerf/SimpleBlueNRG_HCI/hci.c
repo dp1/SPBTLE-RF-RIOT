@@ -64,6 +64,8 @@ void hci_timeout_callback(void)
 char hci_thread_stack[THREAD_STACKSIZE_MAIN];
 void* HCI_Reader_Thread(void *arg);
 
+static kernel_pid_t thread_pid = -1;
+
 void HCI_Init(void)
 {
   uint8_t index;
@@ -78,9 +80,11 @@ void HCI_Init(void)
     ble_list_insert_tail(&hciReadPktPool, (tListNode *)&hciReadPacketBuffer[index]);
   }
 
-  thread_create(hci_thread_stack, sizeof(hci_thread_stack),
-    THREAD_PRIORITY_MAIN - 1, THREAD_CREATE_STACKTEST,
-    HCI_Reader_Thread, NULL, "hci_reader_thread");
+  if(thread_pid == -1) {
+    thread_pid = thread_create(hci_thread_stack, sizeof(hci_thread_stack),
+      THREAD_PRIORITY_MAIN - 1, THREAD_CREATE_STACKTEST,
+      HCI_Reader_Thread, NULL, "hci_reader_thread");
+  }
 }
 
 #define HCI_PCK_TYPE_OFFSET                 0
